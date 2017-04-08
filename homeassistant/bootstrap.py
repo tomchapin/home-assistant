@@ -21,7 +21,6 @@ import homeassistant.loader as loader
 from homeassistant.util.logging import AsyncHandler
 from homeassistant.util.yaml import clear_secret_cache
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import event_decorators, service
 from homeassistant.helpers.signal import async_register_signal_handling
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,8 +74,6 @@ def async_from_config_dict(config: Dict[str, Any],
     This method is a coroutine.
     """
     start = time()
-    hass.async_track_tasks()
-
     core_config = config.get(core.DOMAIN, {})
 
     try:
@@ -127,10 +124,6 @@ def async_from_config_dict(config: Dict[str, Any],
 
     _LOGGER.info('Home Assistant core initialized')
 
-    # Give event decorators access to HASS
-    event_decorators.HASS = hass
-    service.HASS = hass
-
     # stage 1
     for component in components:
         if component not in FIRST_INIT_COMPONENT:
@@ -145,10 +138,10 @@ def async_from_config_dict(config: Dict[str, Any],
             continue
         hass.async_add_job(async_setup_component(hass, component, config))
 
-    yield from hass.async_stop_track_tasks()
+    yield from hass.async_block_till_done()
 
     stop = time()
-    _LOGGER.info('Home Assistant initialized in %ss', round(stop-start, 2))
+    _LOGGER.info('Home Assistant initialized in %.2fs', stop-start)
 
     async_register_signal_handling(hass)
     return hass

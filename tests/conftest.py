@@ -3,7 +3,7 @@ import asyncio
 import functools
 import logging
 import os
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 import requests_mock as _requests_mock
@@ -12,8 +12,9 @@ from homeassistant import util, setup
 from homeassistant.util import location
 from homeassistant.components import mqtt
 
-from .common import async_test_home_assistant, mock_coro
-from .test_util.aiohttp import mock_aiohttp_client
+from tests.common import async_test_home_assistant, mock_coro
+from tests.test_util.aiohttp import mock_aiohttp_client
+from tests.mock.zwave import MockNetwork
 
 if os.environ.get('UVLOOP') == '1':
     import uvloop
@@ -91,3 +92,20 @@ def mqtt_mock(loop, hass):
         client = mock_mqtt()
         client.reset_mock()
         return client
+
+
+@pytest.fixture
+def mock_openzwave():
+    """Mock out Open Z-Wave."""
+    base_mock = MagicMock()
+    libopenzwave = base_mock.libopenzwave
+    libopenzwave.__file__ = 'test'
+    base_mock.network.ZWaveNetwork = MockNetwork
+
+    with patch.dict('sys.modules', {
+        'libopenzwave': libopenzwave,
+        'openzwave.option': base_mock.option,
+        'openzwave.network': base_mock.network,
+        'openzwave.group': base_mock.group,
+    }):
+        yield base_mock

@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import logging.handlers
+import os
 
 from types import ModuleType
 from typing import Optional, Dict
@@ -12,7 +13,8 @@ import homeassistant.core as core
 import homeassistant.loader as loader
 import homeassistant.util.package as pkg_util
 from homeassistant.util.async import run_coroutine_threadsafe
-from homeassistant.const import EVENT_COMPONENT_LOADED, PLATFORM_FORMAT
+from homeassistant.const import (
+    EVENT_COMPONENT_LOADED, PLATFORM_FORMAT, CONSTRAINT_FILE)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +76,10 @@ def _async_process_requirements(hass: core.HomeAssistant, name: str,
 
     def pip_install(mod):
         """Install packages."""
-        return pkg_util.install_package(mod, target=hass.config.path('deps'))
+        return pkg_util.install_package(
+            mod, target=hass.config.path('deps'),
+            constraints=os.path.join(os.path.dirname(__file__),
+                                     CONSTRAINT_FILE))
 
     with (yield from pip_lock):
         for req in requirements:
@@ -248,7 +253,7 @@ def async_prepare_setup_platform(hass: core.HomeAssistant, config, domain: str,
 
         if not dep_success:
             log_error('Could not setup all dependencies.')
-            return False
+            return None
 
     if not hass.config.skip_pip and hasattr(platform, 'REQUIREMENTS'):
         req_success = yield from _async_process_requirements(

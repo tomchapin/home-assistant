@@ -47,7 +47,7 @@ MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(milliseconds=100)
 
 PHUE_CONFIG_FILE = 'phue.conf'
 
-SUPPORT_HUE_ON_OFF = (SUPPORT_FLASH | SUPPORT_TRANSITION | SUPPORT_FLASH)
+SUPPORT_HUE_ON_OFF = (SUPPORT_FLASH | SUPPORT_TRANSITION)
 SUPPORT_HUE_DIMMABLE = (SUPPORT_HUE_ON_OFF | SUPPORT_BRIGHTNESS)
 SUPPORT_HUE_COLOR_TEMP = (SUPPORT_HUE_DIMMABLE | SUPPORT_COLOR_TEMP)
 SUPPORT_HUE_COLOR = (SUPPORT_HUE_DIMMABLE | SUPPORT_EFFECT |
@@ -58,6 +58,7 @@ SUPPORT_HUE = {
     'Extended color light': SUPPORT_HUE_EXTENDED,
     'Color light': SUPPORT_HUE_COLOR,
     'Dimmable light': SUPPORT_HUE_DIMMABLE,
+    'On/Off plug-in unit': SUPPORT_HUE_ON_OFF,
     'Color temperature light': SUPPORT_HUE_COLOR_TEMP
     }
 
@@ -436,12 +437,7 @@ class HueLight(Light):
         command = {'on': False}
 
         if ATTR_TRANSITION in kwargs:
-            # Transition time is in 1/10th seconds and cannot exceed
-            # 900 seconds.
-            command['transitiontime'] = min(
-                9000,
-                int(kwargs[ATTR_TRANSITION] * 10)
-            )
+            command['transitiontime'] = int(kwargs[ATTR_TRANSITION] * 10)
 
         flash = kwargs.get(ATTR_FLASH)
 
